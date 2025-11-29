@@ -1,0 +1,1 @@
+web: gunicorn edusphere.wsgi --bind 0.0.0.0:$PORT
