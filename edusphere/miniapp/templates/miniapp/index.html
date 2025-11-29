@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Lamp Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <style>
+        /* === Палитра: Deep Slate & Neon Accents === */
+        :root {
+            /* Переменные для ЦВЕТОВ (Темный Режим - Deep Slate) */
+            --bg-color: #0d111c; /* Почти черный, очень глубокий синий */
+            --card-bg: rgba(20, 25, 40, 0.7); /* Темный полупрозрачный фон карточек */
+            --text-color: #e2e8f0; /* Светлый серый текст */
+            --heading-color: #81e6d9; /* Яркий, чистый бирюзовый акцент */
+            --table-header-bg: #4c51bf; /* Глубокий индиго */
+            --table-row-bg: #1a202c; /* Темно-серый для строк */
+            --table-row-alt-bg: #111827; /* Еще темнее для чередования */
+            --table-border: rgba(255, 255, 255, 0.08);
+            --card-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(129, 230, 217, 0.15);
+
+            /* Акцентные Цвета Графиков */
+            --chart-temp: #f06292; /* Коралловый */
+            --chart-humidity: #4fc3f7; /* Небесно-голубой */
+            --chart-co2: #aed581; /* Лимонно-зеленый */
+            --chart-noise: #ffb74d; /* Тыквенный */
+            --chart-light: #ba68c8; /* Аметистовый */
+        }
+
+        /* === СТИЛИ СВЕТЛОГО РЕЖИМА === */
+        .light-mode {
+            /* Переменные для ЦВЕТОВ (Светлый Режим - Clean White) */
+            --bg-color: #f7f9fc;
+            --card-bg: #ffffff;
+            --text-color: #374151;
+            --heading-color: #0d111c;
+            --table-header-bg: #1e88e5; /* Яркий синий */
+            --table-row-bg: #ffffff;
+            --table-row-alt-bg: #f3f4f6;
+            --table-border: #e2e8f0;
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+
+             /* Акцентные Цвета Графиков (Сохранены для контраста) */
+            --chart-temp: #e91e63;
+            --chart-humidity: #03a9f4;
+            --chart-co2: #8bc34a;
+            --chart-noise: #ff9800;
+            --chart-light: #9c27b0;
+        }
+
+        /* === Глобальные стили === */
+        body {
+            margin: 0;
+            padding: 40px;
+            background: var(--bg-color);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: background 0.5s, color 0.5s;
+        }
+
+        /* === Заголовки и Типографика === */
+        h1 {
+            text-align: center;
+            color: var(--heading-color);
+            font-family: 'Poppins', sans-serif;
+            font-size: 56px; /* Чуть крупнее */
+            font-weight: 800;
+            margin-bottom: 15px;
+            /* Более тонкая, но яркая тень для акцента */
+            text-shadow: 0 0 10px rgba(129, 230, 217, 0.3);
+            letter-spacing: 2px;
+        }
+
+        h2 {
+            text-align: left;
+            color: var(--text-color);
+            font-size: 22px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 20px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--table-border);
+            transition: color 0.5s;
+        }
+
+        /* === Карточки (Контейнеры) - "Нео-Стеклянный" Дизайн === */
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px); /* Чуть больше размытия */
+            -webkit-backdrop-filter: blur(12px);
+            padding: 30px; /* Чуть больше паддинга */
+            border-radius: 24px; /* Более мягкие углы */
+            max-width: 1200px;
+            margin: 20px auto;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--table-border);
+            transition: all 0.4s ease;
+            box-sizing: border-box;
+        }
+
+        .card:hover {
+            transform: translateY(-6px); /* Более выраженный подъем */
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.8);
+        }
+
+        /* === Flex Layout для Графиков === */
+        .chart-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 30px auto;
+        }
+
+        .chart-row .card {
+            flex: 1 1 calc(50% - 15px);
+            margin: 0;
+        }
+
+        /* === Таблица === */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        th {
+            background: var(--table-header-bg);
+            color: white;
+            padding: 18px; /* Чуть больше высоты */
+            text-align: center;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 15px;
+            text-align: center;
+            background: var(--table-row-bg);
+            border-bottom: 1px solid var(--table-border);
+            color: var(--text-color);
+            font-size: 15px;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:nth-child(even) td {
+            background: var(--table-row-alt-bg);
+        }
+
+        /* Ховеры */
+        tr:hover td {
+            background: #2d3748;
+            color: #ffffff;
+        }
+        .light-mode tr:hover td {
+             background: #e0f2ff;
+             color: #1a202c;
+        }
+
+        td:first-child {
+            font-weight: 600;
+            color: var(--heading-color);
+        }
+
+        /* === КНОПКА ПЕРЕКЛЮЧЕНИЯ РЕЖИМОВ === */
+        #themeToggle {
+            position: fixed;
+            top: 35px;
+            right: 45px;
+            background: var(--card-bg);
+            color: var(--heading-color);
+            border: 2px solid var(--table-border);
+            border-radius: 50%;
+            width: 55px;
+            height: 55px;
+            cursor: pointer;
+            font-size: 22px;
+            box-shadow: var(--card-shadow);
+            z-index: 1000;
+            transition: all 0.4s ease;
+        }
+
+        /* === Стилизация ячейки Color для контраста === */
+        .color-cell-dark {
+             color: #111827 !important;
+             font-weight: 600;
+        }
+        .light-mode .color-cell-light {
+             color: #f7f9fc !important;
+             font-weight: 600;
+        }
+
+    </style>
+</head>
+<body>
+
+<button id="themeToggle" title="Переключить тему">
+    <i class="fas fa-sun"></i>
+</button>
+
+<h1>💡 SMART ENVIRONMENT DASHBOARD 💎</h1>
+
+<div class="card table-card">
+    <h2>Полные данные мониторинга</h2>
+    <table>
+        <tr>
+            <th>Время</th>
+            <th>Температура (°C)</th>
+            <th>Влажность (%)</th>
+            <th>CO₂ (ppm)</th>
+            <th>Шум (dB)</th>
+            <th>Свет (Lux)</th>
+            <th>Цвет (Hex)</th>
+        </tr>
+
+        {% for row in data_table %}
+        <tr>
+            <td>{{ row.timestamp }}</td>
+            <td>{{ row.temperature }}</td>
+            <td>{{ row.humidity }}</td>
+            <td>{{ row.co2 }}</td>
+            <td>{{ row.noise }}</td>
+            <td>{{ row.light }}</td>
+            <td class="color-cell-dark light-mode color-cell-light" style="background-color: {{ row.color }}; border-bottom: 1px solid var(--table-row-bg);">
+                {{ row.color }}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="chart-row">
+    <div class="card">
+        <h2><i class="fas fa-thermometer-half"></i> Температура (°C)</h2>
+        <canvas id="tempChart"></canvas>
+    </div>
+
+    <div class="card">
+        <h2><i class="fas fa-water"></i> Влажность (%)</h2>
+        <canvas id="humidityChart"></canvas>
+    </div>
+</div>
+
+<div class="chart-row">
+    <div class="card">
+        <h2><i class="fas fa-smog"></i> CO₂ (ppm)</h2>
+        <canvas id="co2Chart"></canvas>
+    </div>
+
+    <div class="card">
+        <h2><i class="fas fa-volume-up"></i> Уровень шума (dB)</h2>
+        <canvas id="noiseChart"></canvas>
+    </div>
+</div>
+
+<div class="chart-row">
+    <div class="card">
+        <h2><i class="fas fa-lightbulb"></i> Освещённость (Lux)</h2>
+        <canvas id="lightChart"></canvas>
+    </div>
+    <div class="card" style="visibility: hidden; background: none; box-shadow: none; border: none; backdrop-filter: none; -webkit-backdrop-filter: none;">
+    </div>
+</div>
+
+<script>
+const timestamps = {{ timestamps|safe }};
+const temperature = {{ temperature|safe }};
+const humidity = {{ humidity|safe }};
+const co2 = {{ co2|safe }};
+const noise = {{ noise|safe }};
+const light = {{ light|safe }};
+
+let currentCharts = [];
+
+// === ФУНКЦИЯ ПОСТРОЕНИЯ ГРАФИКОВ ===
+function createCharts(isLightMode) {
+    currentCharts.forEach(chart => chart.destroy());
+    currentCharts = [];
+
+    // Получение цветов из CSS-переменных
+    const root = document.documentElement;
+    const getCssVar = (name) => getComputedStyle(root).getPropertyValue(name).trim();
+
+    const axisColor = isLightMode ? '#6b7280' : '#9ca3af';
+    const gridColor = isLightMode ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)';
+    const tooltipBg = isLightMode ? 'rgba(255, 255, 255, 0.95)' : 'rgba(30, 41, 59, 0.9)';
+    const tooltipText = isLightMode ? '#1f2937' : '#e5e7eb';
+
+    // Новые цвета акцентов
+    const tempColor = getCssVar('--chart-temp');
+    const humidityColor = getCssVar('--chart-humidity');
+    const co2Color = getCssVar('--chart-co2');
+    const noiseColor = getCssVar('--chart-noise');
+    const lightColor = getCssVar('--chart-light');
+
+
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: true,
+                labels: { color: axisColor, font: { family: 'Inter', size: 14, weight: '600' } }
+            },
+            tooltip: {
+                backgroundColor: tooltipBg,
+                titleColor: tooltipText,
+                bodyColor: tooltipText,
+                titleFont: { family: 'Inter', weight: '700' },
+                bodyFont: { family: 'Inter' },
+                borderColor: isLightMode ? '#1e88e5' : '#4c51bf',
+                borderWidth: 1
+            }
+        },
+        scales: {
+            x: {
+                grid: { display: false },
+                ticks: { color: axisColor, font: { family: 'Inter' } }
+            },
+            y: {
+                grid: { color: gridColor },
+                ticks: { color: axisColor, font: { family: 'Inter' } }
+            }
+        }
+    };
+
+    // 1. Температура
+    currentCharts.push(new Chart(document.getElementById('tempChart'), {
+        type: 'line',
+        data: {
+            labels: timestamps,
+            datasets: [{
+                label: 'Temperature (°C)',
+                data: temperature,
+                borderWidth: 3,
+                borderColor: tempColor,
+                backgroundColor: tempColor.replace(')', ', 0.1)').replace('rgb', 'rgba'),
+                tension: 0.5,
+                fill: true,
+                pointRadius: 5,
+                pointBackgroundColor: tempColor,
+                pointBorderColor: isLightMode ? '#ffffff' : '#0d111c'
+            }]
+        },
+        options: chartOptions
+    }));
+
+    // 2. Влажность
+    currentCharts.push(new Chart(document.getElementById('humidityChart'), {
+        type: 'line',
+        data: {
+            labels: timestamps,
+            datasets: [{
+                label: 'Humidity (%)',
+                data: humidity,
+                borderWidth: 3,
+                borderColor: humidityColor,
+                backgroundColor: humidityColor.replace(')', ', 0.1)').replace('rgb', 'rgba'),
+                tension: 0.5,
+                fill: true,
+                pointRadius: 5,
+                pointBackgroundColor: humidityColor,
+                pointBorderColor: isLightMode ? '#ffffff' : '#0d111c'
+            }]
+        },
+        options: chartOptions
+    }));
+
+    // 3. CO2
+    currentCharts.push(new Chart(document.getElementById('co2Chart'), {
+        type: 'bar',
+        data: {
+            labels: timestamps,
+            datasets: [{
+                label: 'CO₂ ppm',
+                data: co2,
+                backgroundColor: co2Color,
+                borderRadius: 8,
+                barPercentage: 0.6
+            }]
+        },
+        options: chartOptions
+    }));
+
+    // 4. Noise
+    currentCharts.push(new Chart(document.getElementById('noiseChart'), {
+        type: 'bar',
+        data: {
+            labels: timestamps,
+            datasets: [{
+                label: 'Noise level (dB)',
+                data: noise,
+                backgroundColor: noiseColor,
+                borderRadius: 8,
+                barPercentage: 0.6
+            }]
+        },
+        options: chartOptions
+    }));
+
+    // 5. Light
+    currentCharts.push(new Chart(document.getElementById('lightChart'), {
+        type: 'bar',
+        data: {
+            labels: timestamps,
+            datasets: [{
+                label: 'Light level (Lux)',
+                data: light,
+                backgroundColor: lightColor,
+                borderRadius: 8,
+                barPercentage: 0.6
+            }]
+        },
+        options: chartOptions
+    }));
+}
+
+// === ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ РЕЖИМА ===
+function toggleTheme() {
+    const body = document.body;
+    const toggleButton = document.getElementById('themeToggle');
+
+    // Переключаем класс
+    const isLightMode = body.classList.toggle('light-mode');
+
+    // Обновляем иконку
+    if (isLightMode) {
+        toggleButton.innerHTML = '<i class="fas fa-moon"></i>';
+    } else {
+        toggleButton.innerHTML = '<i class="fas fa-sun"></i>';
+    }
+
+    // Обновляем графики, передавая текущий режим
+    createCharts(isLightMode);
+}
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+    createCharts(false);
+});
+
+</script>
+
+</body>
+</html>
