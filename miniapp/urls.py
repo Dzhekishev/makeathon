@@ -5,8 +5,8 @@ from . import views
 from rest_framework.urlpatterns import format_suffix_patterns
 
 urlpatterns = [
-    path('', views.Sensordata_View.as_view(), name='Sensordata_View'),
-    path('index',sensordata, name='sensordata')
+ #   path('', views.Sensordata_View.as_view(), name='Sensordata_View'),
+    path('',sensordata, name='sensordata')
 ]
 
 
